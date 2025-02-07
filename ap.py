@@ -1,32 +1,49 @@
 import streamlit as st
 import random
+import time
 
-def main():
-    st.title("Number Guessing Game")
-    
-    if 'random_number' not in st.session_state:
-        st.session_state.random_number = random.randint(1, 100)
-    
-    if 'game_over' not in st.session_state:
-        st.session_state.game_over = False
-    
-    st.write("Guess a number between 1 and 100")
-    
-    guess = st.number_input("Enter your guess:", min_value=1, max_value=100, step=1)
-    
-    if st.button("Check Guess") and not st.session_state.game_over:
-        if guess < st.session_state.random_number:
-            st.warning("Too low! Try again.")
-        elif guess > st.session_state.random_number:
-            st.warning("Too high! Try again.")
-        else:
-            st.success("Congratulations! You guessed the correct number.")
-            st.session_state.game_over = True
-            
-    if st.button("Restart Game"):
-        st.session_state.random_number = random.randint(1, 100)
-        st.session_state.game_over = False
-        st.experimental_rerun()
+# Initialize game state
+if 'score' not in st.session_state:
+    st.session_state.score = 0
+    st.session_state.character_y = 200
+    st.session_state.food_x = random.randint(50, 350)
+    st.session_state.food_y = random.randint(50, 350)
+    st.session_state.jump = False
 
-if __name__ == "__main__":
-    main()
+def jump():
+    st.session_state.jump = True
+
+def reset():
+    st.session_state.score = 0
+    st.session_state.character_y = 200
+    st.session_state.food_x = random.randint(50, 350)
+    st.session_state.food_y = random.randint(50, 350)
+    st.session_state.jump = False
+
+st.title("Jump and Eat Game")
+st.write(f"Score: {st.session_state.score}")
+
+# Jump button
+if st.button("Jump"):
+    jump()
+
+# Game loop
+if st.session_state.jump:
+    st.session_state.character_y -= 50  # Move up
+    time.sleep(0.2)
+    st.session_state.character_y += 50  # Move down
+    st.session_state.jump = False
+
+# Check if character reaches food
+if abs(st.session_state.character_y - st.session_state.food_y) < 30 and abs(200 - st.session_state.food_x) < 30:
+    st.session_state.score += 1
+    st.session_state.food_x = random.randint(50, 350)
+    st.session_state.food_y = random.randint(50, 350)
+
+# Render game
+st.write(f"Character Y: {st.session_state.character_y}")
+st.write(f"Food Position: ({st.session_state.food_x}, {st.session_state.food_y})")
+
+# Reset button
+if st.button("Reset Game"):
+    reset()
