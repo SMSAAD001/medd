@@ -1,49 +1,108 @@
 import streamlit as st
-import random
+import pygame
+import numpy as np
 import time
 
-# Initialize game state
-if 'score' not in st.session_state:
-    st.session_state.score = 0
-    st.session_state.character_y = 200
-    st.session_state.food_x = random.randint(50, 350)
-    st.session_state.food_y = random.randint(50, 350)
-    st.session_state.jump = False
+# Initialize pygame
+pygame.init()
 
-def jump():
-    st.session_state.jump = True
+# Game constants
+WIDTH, HEIGHT = 400, 400
+BLOCK_SIZE = 20
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLACK = (0, 0, 0)
 
-def reset():
-    st.session_state.score = 0
-    st.session_state.character_y = 200
-    st.session_state.food_x = random.randint(50, 350)
-    st.session_state.food_y = random.randint(50, 350)
-    st.session_state.jump = False
+def draw_snake(snake_body, surface):
+    for block in snake_body:
+        pygame.draw.rect(surface, GREEN, pygame.Rect(block[0], block[1], BLOCK_SIZE, BLOCK_SIZE))
 
-st.title("Jump and Eat Game")
-st.write(f"Score: {st.session_state.score}")
+def main():
+    st.title("Snake Game in Streamlit")
+    st.write("Use arrow keys to play")
 
-# Jump button
-if st.button("Jump"):
-    jump()
+    canvas = st.empty()
+    clock = pygame.time.Clock()
 
-# Game loop
-if st.session_state.jump:
-    st.session_state.character_y -= 50  # Move up
-    time.sleep(0.2)
-    st.session_state.character_y += 50  # Move down
-    st.session_state.jump = False
+    # Initialize game variables
+    snake_pos = [100, 50]
+    snake_body = [[100, 50], [80, 50], [60, 50]]
+    direction = 'RIGHT'
+    change_to = direction
+    food_pos = [np.random.randint(1, WIDTH//BLOCK_SIZE) * BLOCK_SIZE, 
+                np.random.randint(1, HEIGHT//BLOCK_SIZE) * BLOCK_SIZE]
+    food_spawn = True
+    speed = 10
+    
+    # Main game loop
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    change_to = 'UP'
+                elif event.key == pygame.K_DOWN:
+                    change_to = 'DOWN'
+                elif event.key == pygame.K_LEFT:
+                    change_to = 'LEFT'
+                elif event.key == pygame.K_RIGHT:
+                    change_to = 'RIGHT'
+        
+        # Ensuring the snake cannot reverse
+        if change_to == 'UP' and direction != 'DOWN':
+            direction = 'UP'
+        if change_to == 'DOWN' and direction != 'UP':
+            direction = 'DOWN'
+        if change_to == 'LEFT' and direction != 'RIGHT':
+            direction = 'LEFT'
+        if change_to == 'RIGHT' and direction != 'LEFT':
+            direction = 'RIGHT'
+        
+        # Move the snake
+        if direction == 'UP':
+            snake_pos[1] -= BLOCK_SIZE
+        if direction == 'DOWN':
+            snake_pos[1] += BLOCK_SIZE
+        if direction == 'LEFT':
+            snake_pos[0] -= BLOCK_SIZE
+        if direction == 'RIGHT':
+            snake_pos[0] += BLOCK_SIZE
+        
+        # Snake body growing
+        snake_body.insert(0, list(snake_pos))
+        if snake_pos == food_pos:
+            food_spawn = False
+        else:
+            snake_body.pop()
+        
+        if not food_spawn:
+            food_pos = [np.random.randint(1, WIDTH//BLOCK_SIZE) * BLOCK_SIZE, 
+                        np.random.randint(1, HEIGHT//BLOCK_SIZE) * BLOCK_SIZE]
+        food_spawn = True
+        
+        # Game over conditions
+        if snake_pos[0] < 0 or snake_pos[0] > WIDTH-BLOCK_SIZE or snake_pos[1] < 0 or snake_pos[1] > HEIGHT-BLOCK_SIZE:
+            break
+        for block in snake_body[1:]:
+            if snake_pos == block:
+                break
+        
+        # Render game
+        surface = pygame.Surface((WIDTH, HEIGHT))
+        surface.fill(BLACK)
+        draw_snake(snake_body, surface)
+        pygame.draw.rect(surface, RED, pygame.Rect(food_pos[0], food_pos[1], BLOCK_SIZE, BLOCK_SIZE))
+        
+        # Convert pygame surface to Streamlit image
+        img = pygame.surfarray.array3d(surface)
+        img = np.rot90(img)
+        img = np.flipud(img)
+        canvas.image(img, channels="RGB")
+        
+        clock.tick(speed)
+        time.sleep(0.1)
+    
+    st.write("Game Over!")
 
-# Check if character reaches food
-if abs(st.session_state.character_y - st.session_state.food_y) < 30 and abs(200 - st.session_state.food_x) < 30:
-    st.session_state.score += 1
-    st.session_state.food_x = random.randint(50, 350)
-    st.session_state.food_y = random.randint(50, 350)
-
-# Render game
-st.write(f"Character Y: {st.session_state.character_y}")
-st.write(f"Food Position: ({st.session_state.food_x}, {st.session_state.food_y})")
-
-# Reset button
-if st.button("Reset Game"):
-    reset()
+if __name__ == "__main__":
+    main()
