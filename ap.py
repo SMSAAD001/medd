@@ -1,52 +1,32 @@
 import streamlit as st
-import numpy as np
+import random
 
-class TeamworkStrategyGame:
-    def __init__(self, players):
-        self.players = players
-        self.board = self.initialize_board()
-        self.turn = 0
-
-    def initialize_board(self):
-        return [['-' for _ in range(5)] for _ in range(5)]
-
-    def display_board(self):
-        return '\n'.join([' '.join(row) for row in self.board])
-
-    def take_turn(self, player, x, y, action):
-        if self.board[x][y] != '-':
-            return "Invalid move! Space occupied."
-        self.board[x][y] = action
-        self.next_turn()
-        return f"{player} performed {action} at ({x}, {y})"
-
-    def next_turn(self):
-        self.turn = (self.turn + 1) % len(self.players)
-
-# Streamlit UI
 def main():
-    st.title("Teamwork Strategy Game")
-    players = ["Alice", "Bob"]
-    game = TeamworkStrategyGame(players)
+    st.title("Number Guessing Game")
     
-    if 'game' not in st.session_state:
-        st.session_state['game'] = game
+    if 'random_number' not in st.session_state:
+        st.session_state.random_number = random.randint(1, 100)
     
-    st.write("Current Board:")
-    st.text(st.session_state['game'].display_board())
+    if 'game_over' not in st.session_state:
+        st.session_state.game_over = False
     
-    player = players[st.session_state['game'].turn]
-    st.write(f"Current Turn: {player}")
+    st.write("Guess a number between 1 and 100")
     
-    x = st.number_input("Enter X coordinate:", min_value=0, max_value=4, step=1)
-    y = st.number_input("Enter Y coordinate:", min_value=0, max_value=4, step=1)
-    action = st.selectbox("Select Action:", ["Build", "Defend"])
+    guess = st.number_input("Enter your guess:", min_value=1, max_value=100, step=1)
     
-    if st.button("Take Turn"):
-        result = st.session_state['game'].take_turn(player, x, y, action)
-        st.write(result)
-        st.write("Updated Board:")
-        st.text(st.session_state['game'].display_board())
+    if st.button("Check Guess") and not st.session_state.game_over:
+        if guess < st.session_state.random_number:
+            st.warning("Too low! Try again.")
+        elif guess > st.session_state.random_number:
+            st.warning("Too high! Try again.")
+        else:
+            st.success("Congratulations! You guessed the correct number.")
+            st.session_state.game_over = True
+            
+    if st.button("Restart Game"):
+        st.session_state.random_number = random.randint(1, 100)
+        st.session_state.game_over = False
+        st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
